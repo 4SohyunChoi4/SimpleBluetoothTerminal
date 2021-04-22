@@ -6,15 +6,17 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.method.ScrollingMovementMethod;
 import android.text.style.ForegroundColorSpan;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -48,6 +50,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     /*
      * Lifecycle
      */
+
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -120,6 +124,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     /*
      * UI
      */
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal, container, false);
@@ -133,8 +138,17 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         sendText.addTextChangedListener(hexWatcher);
         sendText.setHint(hexEnabled ? "HEX mode" : "");
 
-        View sendBtn = view.findViewById(R.id.send_btn);
-        sendBtn.setOnClickListener(v -> send(sendText.getText().toString()));
+      //  View sendBtn = view.findViewById(R.id.send_btn);
+      //  sendBtn.setOnClickListener((View v){
+      //      send(sendText.getText().toString());
+      //  });
+
+        SharedPreferences pref = this.getActivity().getSharedPreferences("info",Context.MODE_PRIVATE); //내가 추가한 부분!!
+        String name = pref.getString("name","");
+    //    String addr = pref.getString("addr","");
+    //    String phone = pref.getString("phone","");
+    //    send(sendText.setText(name));
+
         return view;
     }
 
@@ -185,6 +199,17 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             connected = Connected.Pending;
             SerialSocket socket = new SerialSocket(getActivity().getApplicationContext(), device);
             service.connect(socket);
+
+            AlertDialog.Builder ad = new AlertDialog.Builder(new ContextThemeWrapper(getActivity(), android.R.style.Theme_DeviceDefault_Light));
+            ad.setMessage("Do you agree to send your personal information?");
+            ad.setPositiveButton("Agree", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface , int i) { // when clicking 'ok' button -> sharedreferences받아온다
+                    send("choi chung-pa 01012345678");
+                    dialogInterface.dismiss();
+                }
+            });
+            ad.show();
         } catch (Exception e) {
             onSerialConnectError(e);
         }
@@ -195,7 +220,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         service.disconnect();
     }
 
-    private void send(String str) {
+    private void send(String str) { //보내기 버튼을 눌렀을 때
         if(connected != Connected.True) {
             Toast.makeText(getActivity(), "not connected", Toast.LENGTH_SHORT).show();
             return;
@@ -213,7 +238,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                 msg = str;
                 data = (str + newline).getBytes();
             }
-            SpannableStringBuilder spn = new SpannableStringBuilder(msg + '\n');
+            SpannableStringBuilder spn = new SpannableStringBuilder(msg+'\n');
             spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorSendText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             receiveText.append(spn);
             service.write(data);
@@ -221,7 +246,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             onSerialIoError(e);
         }
     }
-
+/*
     private void receive(byte[] data) {
         if(hexEnabled) {
             receiveText.append(TextUtil.toHexString(data) + '\n');
@@ -241,9 +266,9 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             receiveText.append(TextUtil.toCaretString(msg, newline.length() != 0));
         }
     }
-
+*/
     private void status(String str) {
-        SpannableStringBuilder spn = new SpannableStringBuilder(str + '\n');
+        SpannableStringBuilder spn = new SpannableStringBuilder(str+'\n');
         spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorStatusText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         receiveText.append(spn);
     }
@@ -265,7 +290,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     @Override
     public void onSerialRead(byte[] data) {
-        receive(data);
+        //receive(data);
     }
 
     @Override
